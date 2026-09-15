@@ -1,20 +1,3 @@
-"""
-common.py — shared data loading + PCA reduction used by every individual
-model script (01_knn.py, 01_random_forest.py, 01_svm.py, etc).
-
-Keeping this in one place means every model sees the EXACT same train/test
-split and PCA features, so their accuracy numbers are fairly comparable.
-
-FULL DATASET MODE: uses ALL galaxies in gz2_labeled.csv (all ~243k), not a
-balanced subsample. This needs IncrementalPCA (processes images in small
-batches instead of loading all 243k raw pixel arrays into RAM at once --
-that would need ~48GB of RAM and crash). Results get cached to disk after
-the first run, so the expensive image-loading pass only happens ONCE across
-all your model scripts, not once per script.
-
-Multi-class setup: 5 classes -- disc, spiral, elliptical, round, irregular.
-"""
-
 import numpy as np
 import pandas as pd
 from pathlib import Path
@@ -63,9 +46,6 @@ def _image_batches(df: pd.DataFrame, batch_size: int):
 
 
 def load_images_and_labels(df: pd.DataFrame):
-    """Loads a (usually small/subsampled) set of images fully into memory.
-    Fine for a few thousand images; for the full ~243k dataset use
-    get_train_test_pca_features() instead, which streams via IncrementalPCA."""
     X_parts, y_parts = [], []
     for Xb, yb in _image_batches(df, batch_size=2000):
         X_parts.append(Xb)
@@ -82,16 +62,7 @@ def load_images_and_labels(df: pd.DataFrame):
 
 
 def get_train_test_pca_features(use_cache: bool = True):
-    """
-    Full-dataset pipeline: ALL rows in gz2_labeled.csv, not a balanced
-    subsample. Uses IncrementalPCA (constant memory regardless of dataset
-    size) and caches the final 125-dim features to disk so this expensive
-    step only runs once -- every 01_*.py script calling this after the first
-    one will just load the cache in a couple seconds.
-
-    To force a recompute (e.g. after changing IMG_SIZE or N_PCA_COMPONENTS),
-    delete the cache file at FEATURE_CACHE or pass use_cache=False.
-    """
+    
     if use_cache and Path(FEATURE_CACHE).exists():
         print(f"Loading cached PCA features from {FEATURE_CACHE}")
         data = np.load(FEATURE_CACHE, allow_pickle=True)
@@ -143,11 +114,7 @@ def get_train_test_pca_features(use_cache: bool = True):
 
 
 def get_full_pca_features():
-    """
-    For unsupervised clustering scripts (Step 2) -- reuses the same cached
-    train+test PCA features (combining them back into one set, since
-    clustering doesn't need a train/test split) rather than recomputing.
-    """
+    
     X_train_p, X_test_p, y_train, y_test = get_train_test_pca_features()
     X_p = np.vstack([X_train_p, X_test_p])
     y = np.concatenate([y_train, y_test])
@@ -155,10 +122,7 @@ def get_full_pca_features():
 
 
 def report_clustering(method_name: str, X_p, y, labels_by_k: dict):
-    """
-    labels_by_k: {k: cluster_labels_array}.
-    Saves silhouette scores + ARI/NMI-vs-true-5-class-labels for each k.
-    """
+   
     from sklearn.metrics import silhouette_score, adjusted_rand_score, normalized_mutual_info_score
 
     rows = []
@@ -177,13 +141,7 @@ def report_clustering(method_name: str, X_p, y, labels_by_k: dict):
 
 
 def save_confusion_matrix(model_name: str, y_test, preds, classes=None):
-    """
-    Computes and saves a confusion matrix, both as a CSV (raw counts) and a
-    PNG heatmap. Rows = true label, columns = predicted label -- the diagonal
-    is what the model got right; everything off-diagonal shows exactly which
-    classes it's confusing with which (e.g. how many true "spiral" galaxies
-    got predicted as "disc").
-    """
+    
     from sklearn.metrics import confusion_matrix
     import matplotlib
     matplotlib.use("Agg")
