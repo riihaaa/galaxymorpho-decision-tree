@@ -1,0 +1,8 @@
+# Classical ML + data handling
+numpy
+pandas
+pillow
+scikit-learn
+
+# Deep learning (CNN) -- GPU-enabled torch installed separately, see SETUP.md
+torchvision

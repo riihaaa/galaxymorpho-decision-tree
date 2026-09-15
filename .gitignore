@@ -1,0 +1,11 @@
+# Ignore large dataset files and cache
+*.csv
+*.npz
+*.zip
+images_gz2/
+
+# Ignore virtual environments and Python cache
+myenv/
+venv/
+__pycache__/
+*.pyc
