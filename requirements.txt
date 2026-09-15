@@ -3,6 +3,6 @@ numpy
 pandas
 pillow
 scikit-learn
-
+matplotlib
 # Deep learning (CNN) -- GPU-enabled torch installed separately, see SETUP.md
 torchvision
